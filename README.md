@@ -1,0 +1,2 @@
+# insomnia
+Insomnia documentation generator
