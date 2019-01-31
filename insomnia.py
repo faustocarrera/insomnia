@@ -13,8 +13,8 @@ import json
 import click
 from pathlib import Path
 
-__version__ = '0.1.1'
-__updated__ = '2018-01-21'
+__version__ = '0.2.0'
+__updated__ = '2019-01-31'
 
 
 class Insomia(object):
@@ -116,20 +116,37 @@ class Insomia(object):
         md_file.write(title + '\n')
         md_file.write('=' * len(title))
         md_file.write('\n\n')
+        # menu
+        for endpoint in entry['requests']:
+            md_file.write('* [{0}](#{1})\n'.format(endpoint['name'], endpoint['name'].lower().replace(' ', '-')))
+        # break
+        md_file.write('\n\n')
         # entries
         for endpoint in entry['requests']:
             md_file.write('## {0}\n'.format(endpoint['name']))
             md_file.write('\n')
-            md_file.write('__Descripción__: {0}.  \n'.format(endpoint['description']))
-            md_file.write('__Método__: `{0}`  \n'.format(endpoint['method']))
+            md_file.write('__Description__: {0}.  \n'.format(endpoint['description']))
+            md_file.write('__Method__: `{0}`  \n'.format(endpoint['method']))
             md_file.write('__URL__: `{0}`  \n'.format(endpoint['url']))
             if len(endpoint['parameters']):
-                md_file.write('__Parametros__: `{0}`  \n'.format('&'.join(endpoint['parameters'])))
+                md_file.write('__Query parameters__: `{0}`  \n'.format('&'.join(endpoint['parameters'])))
+            md_file.write('__Payload__:  \n')
             if endpoint['body']:
-                md_file.write('__Payload__:  \n')
                 md_file.write('```  \n')
                 md_file.write('{0}\n'.format(endpoint['body']))
                 md_file.write('```  \n')
+            # response
+            md_file.write('\n')
+            md_file.write('__Response ok:__\n')
+            md_file.write('\n')
+            md_file.write('```  \n')
+            md_file.write('```  \n')
+            md_file.write('\n')
+            md_file.write('__Response error:__\n')
+            md_file.write('\n')
+            md_file.write('```  \n')
+            md_file.write('[]   \n')
+            md_file.write('```  \n')
             md_file.write('\n')
         md_file.close()
 
