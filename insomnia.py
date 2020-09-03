@@ -49,13 +49,15 @@ class Insomia(object):
     def __get_resources(entries):
         "Parse the json"
         resources = {}
+        # the resources
         for entry in entries:
-            # the resources
             if entry['_type'] == 'request_group' and entry['_id'] not in resources:
-                resources[entry['_id']] = {}
-                resources[entry['_id']]['name'] = entry['name']
-                resources[entry['_id']]['requests'] = []
-            # the requests
+                resources[entry['_id']] = {
+                    'name': entry['name'],
+                    'requests': []
+                }
+        # the requests
+        for entry in entries:
             if entry['_type'] == 'request':
                 request = {
                     'name': entry['name'],
