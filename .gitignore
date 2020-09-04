@@ -99,3 +99,8 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# misc
+insomnia.json
+docs/*
+.vscode

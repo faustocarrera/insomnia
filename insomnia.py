@@ -13,8 +13,8 @@ import json
 import click
 from pathlib import Path
 
-__version__ = '0.2.0'
-__updated__ = '2019-01-31'
+__version__ = '0.2.1'
+__updated__ = '2020-09-03'
 
 
 class Insomia(object):
