@@ -21,10 +21,11 @@ class Insomia(object):
 
     "Insomnia class"
 
-    def __init__(self, filename, destination):
+    def __init__(self, filename, destination, single):
         self.filename = filename
         self.destination = destination
         self.title = None
+        self.single_page = single
 
     def export(self):
         "Read the JSON file and export it"
@@ -33,7 +34,10 @@ class Insomia(object):
         self.title = content[0]['name']
         # fill the resources
         resources = self.__get_resources(content)
-        self.__convert(resources, self.destination)
+        if self.single_page:
+            self.__single(resources, self.destination)
+        else:
+            self.__multi(resources, self.destination)
 
     def __get_content(self, filename):
         "Check if the file exists and read it"
@@ -45,8 +49,7 @@ class Insomia(object):
         print('Error reading file')
         sys.exit(1)
 
-    @staticmethod
-    def __get_resources(entries):
+    def __get_resources(self, entries):
         "Parse the json"
         resources = {}
         # the resources
@@ -63,7 +66,7 @@ class Insomia(object):
                     'name': entry['name'],
                     'method': entry['method'],
                     'url': entry['url'],
-                    'description': entry['description'],
+                    'description': self.__get_escription(entry['description']),
                     'parameters': [],
                     'body': None
                 }
@@ -74,10 +77,16 @@ class Insomia(object):
                     ))
                 if 'text' in entry['body']:
                     request['body'] = entry['body']['text']
+                else:
+                    request['body'] = entry['body']
                 resources[entry['parentId']]['requests'].append(request)
         return resources
 
-    def __convert(self, resources, destination):
+    def __single(self, resources, destination):
+        "Convert dictionary to one big file"
+        pass
+
+    def __multi(self, resources, destination):
         "Convert dictionary to files"
         index = []
         for resource in resources:
@@ -94,6 +103,33 @@ class Insomia(object):
         self.__index(self.title, index, destination)
 
     @staticmethod
+    def __get_escription(description):
+        "Split description and responses"
+        result = {
+            'description': '',
+            'success': '',
+            'error': '',
+        }
+        parts = description.split('|')
+        # description
+        try:
+            result['description'] = parts[0].strip()
+        except IndexError:
+            pass
+        # success
+        try:
+            result['success'] = parts[1].strip()
+        except IndexError:
+            pass
+        # error
+        try:
+            result['error'] = parts[2].strip()
+        except IndexError:
+            pass
+        # return
+        return result
+
+    @staticmethod
     def __index(title, index, destination):
         "Generate index"
         index_file = os.path.join(destination, 'README.md')
@@ -103,7 +139,7 @@ class Insomia(object):
         md_file.write('=' * len(title))
         md_file.write('\n\n')
         # index
-        md_file.write('## Indice\n')
+        md_file.write('## Index\n')
         md_file.write('\n')
         for entry in index:
             md_file.write('1. [{0}](./{1})\n'.format(entry['name'], entry['url']))
@@ -127,27 +163,34 @@ class Insomia(object):
         for endpoint in entry['requests']:
             md_file.write('## {0}\n'.format(endpoint['name']))
             md_file.write('\n')
-            md_file.write('__Description__: {0}.  \n'.format(endpoint['description']))
+            md_file.write('__Description__: {0}.  \n'.format(endpoint['description']['description']))
             md_file.write('__Method__: `{0}`  \n'.format(endpoint['method']))
             md_file.write('__URL__: `{0}`  \n'.format(endpoint['url']))
             if len(endpoint['parameters']):
-                md_file.write('__Query parameters__: `{0}`  \n'.format('&'.join(endpoint['parameters'])))
+                md_file.write('__Query parameters__: `?{0}`  \n'.format('&'.join(endpoint['parameters'])))
             md_file.write('__Payload__:  \n')
             if endpoint['body']:
-                md_file.write('```  \n')
-                md_file.write('{0}\n'.format(endpoint['body']))
-                md_file.write('```  \n')
+                if 'params' in endpoint['body']:
+                    md_file.write('```  \n')
+                    for param in endpoint['body']['params']:
+                        md_file.write('{0}={1}\n'.format(param['name'].strip(), param['value'].strip()))
+                    md_file.write('```  \n')
+                else:
+                    md_file.write('```  \n')
+                    md_file.write('{0}\n'.format(endpoint['body']))
+                    md_file.write('```  \n')
             # response
             md_file.write('\n')
             md_file.write('__Response ok:__\n')
             md_file.write('\n')
             md_file.write('```  \n')
+            md_file.write(endpoint['description']['success'] + '\n')
             md_file.write('```  \n')
             md_file.write('\n')
             md_file.write('__Response error:__\n')
             md_file.write('\n')
             md_file.write('```  \n')
-            md_file.write('[]   \n')
+            md_file.write(endpoint['description']['error'] + '\n')
             md_file.write('```  \n')
             md_file.write('\n')
         md_file.close()
@@ -202,20 +245,28 @@ def about_self():
     help='Destination MD files, default is current folder'
 )
 @click.option(
+    '-s',
+    '--single',
+    'single',
+    default=False,
+    is_flag=True,
+    help='Export in a single page'
+)
+@click.option(
     '--about',
     'about',
     default=False,
     is_flag=True,
     help='About insomnia md generator'
 )
-def run(input, output, about):
+def run(input, output, single, about):
     "Convert Insmonia JSON exported files to MD, for documentation."
     # about
     if about:
         about_self()
     # export
     if input:
-        Insomnia = Insomia(input, output)
+        Insomnia = Insomia(input, output, single)
         Insomnia.export()
     else:
         print('Use --help')
